@@ -3,9 +3,9 @@
 Research-backed, OTel-native anomaly detection for SRE teams.
 
 ## Status
-- **Phase**: Research & Planning complete. Ready for Phase 1 (scaffolding) on Mateen's go.
+- **Phase**: Phase 1 (MVP scaffolding) complete. Building Phase 1.5 (ingestion, alerting, tuning).
 - **Domain**: autosre.dev (purchased)
-- **GitHub**: phonotechnologies/autosre (pending creation)
+- **GitHub**: https://github.com/phonotechnologies/autosre
 - **License**: Apache-2.0 (Grafana model: OSS core + managed service)
 - **Entity**: Phono Technologies Inc.
 
@@ -18,6 +18,7 @@ Research-backed, OTel-native anomaly detection for SRE teams.
 | `doanddonts.md` | Strategic guardrails |
 | `competitive-analysis.md` | Market research and competitor analysis |
 | `RESEARCH.md` | Agent frameworks, tools, domain research |
+| `architecture.md` | Architecture evolution: monolith → SOA, service boundaries |
 | `todo-mateen.md` | Human action items (namespace claims, IP validation) |
 | `todo-claude.md` | Build phases 1-4 |
 
