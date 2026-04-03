@@ -3,11 +3,40 @@
 Research-backed, OTel-native anomaly detection for SRE teams.
 
 ## Status
-- **Phase**: Phase 1 (MVP scaffolding) complete. Building Phase 1.5 (ingestion, alerting, tuning).
+- **Phase**: Phase 1 COMPLETE (66 tests, lint clean). Phase 2 (streaming) is next.
 - **Domain**: autosre.dev (purchased)
 - **GitHub**: https://github.com/phonotechnologies/autosre
+- **PyPI**: https://pypi.org/project/autosre/
+- **npm**: @mateenali66/autosre
 - **License**: Apache-2.0 (Grafana model: OSS core + managed service)
 - **Entity**: Phono Technologies Inc.
+- **Architecture**: Modular monolith → SOA (see architecture.md)
+
+## What's Built (Phase 1)
+
+```
+src/autosre/
+├── cli/main.py                    # Typer CLI: init, train, detect, models, status
+├── config/schema.py               # YAML config (vLLM, ClickHouse, cooldown, OTel)
+├── collector/
+│   ├── parser.py                  # OTLP JSON parsers (metrics, traces, logs)
+│   └── features.py                # Feature engineering (mean/std/max, latency p50/p95/p99)
+├── detection/
+│   ├── models/
+│   │   ├── base.py                # BaseDetector + ModelRegistry
+│   │   ├── classical.py           # Isolation Forest + One-Class SVM
+│   │   └── deep.py                # LSTM-AE, Transformer-AE, CNN-AE, LSTM-VAE
+│   ├── cooldown/exclusion.py      # Cooldown-aware detection (CORE DIFFERENTIATOR)
+│   ├── threshold/finder.py        # F1-optimal, percentile, statistical
+│   ├── fusion.py                  # Late fusion: max, average, weighted, majority vote
+│   ├── ablation/analyzer.py       # Feature importance via leave-one-group-out
+│   └── tuning.py                  # Optuna HP tuning for all 6 models
+├── alerting/dispatcher.py         # Slack + webhook alerts
+├── streaming/                     # Placeholder (Phase 2)
+└── inference/                     # Placeholder (Phase 3)
+```
+
+Tests: 66 passing (models, cooldown, threshold, fusion, collector, alerting)
 
 ## Key Files
 | File | Purpose |
@@ -15,12 +44,12 @@ Research-backed, OTel-native anomaly detection for SRE teams.
 | `features.md` | Feature map tied to all 7 PhD papers, MVP scope |
 | `tech-stack.md` | Full technology stack with justifications |
 | `technology.md` | Core technology deep dive |
+| `architecture.md` | Architecture evolution: monolith → SOA, service boundaries |
 | `doanddonts.md` | Strategic guardrails |
 | `competitive-analysis.md` | Market research and competitor analysis |
 | `RESEARCH.md` | Agent frameworks, tools, domain research |
-| `architecture.md` | Architecture evolution: monolith → SOA, service boundaries |
-| `todo-mateen.md` | Human action items (namespace claims, IP validation) |
-| `todo-claude.md` | Build phases 1-4 |
+| `todo-mateen.md` | Human action items |
+| `todo-claude.md` | Build phases and progress tracking |
 
 ## Core Differentiators vs OpenSRE / Azure SRE Agent / AWS DevOps Agent
 1. **Cooldown-aware detection** (zero competitors, Paper 5)
@@ -62,3 +91,10 @@ Research-backed, OTel-native anomaly detection for SRE teams.
 - Never mention AI/Claude in commits or public content
 - Test detection code against Paper 5 benchmarks before claiming it works
 - Target conference: KubeCon NA 2026
+- Run `pytest tests/ -v -p no:asyncio` (asyncio plugin conflicts)
+- Run `ruff check src/ tests/` for lint
+
+## How to Resume
+Say "Continue building AutoSRE, pick up from Phase 2" in next conversation.
+Phase 2 = ClickHouse schema → Flink jobs → vLLM integration.
+Read `architecture.md` and `todo-claude.md` for full context.

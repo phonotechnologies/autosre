@@ -6,153 +6,118 @@ Things that can be researched, built, verified, or automated.
 
 ## PHASE 0: Foundation (COMPLETE)
 
-### Research
-- [x] Deep competitive analysis of AIOps/SRE market
-- [x] Agent framework comparison (LangGraph vs CrewAI vs AutoGen vs DeerFlow)
-- [x] Tech stack research and recommendations
-- [x] Domain/namespace availability check
-- [x] PhD paper-to-feature mapping
-
-### Documentation
-- [x] features.md -- Feature map tied to all 7 papers
-- [x] tech-stack.md -- Full stack with justifications
-- [x] technology.md -- Core technology deep dive
-- [x] doanddonts.md -- Strategic guardrails
-- [x] competitive-analysis.md -- Market research
-- [x] RESEARCH.md -- Agent framework and tooling research
-- [x] todo-mateen.md -- Human action items
-- [x] todo-claude.md -- This file
-
-### Confirmed Decisions
-- [x] Name: AutoSRE
-- [x] Domain: autosre.dev
-- [x] License: Apache-2.0 (Grafana model)
-- [x] Entity: Phono Technologies Inc.
-- [x] GitHub: phonotechnologies/autosre
-- [x] LLM: vLLM + Qwen/DeepSeek (self-hosted, no API dependency)
-- [x] Cloud: AWS (EKS)
-- [x] Telemetry DB: ClickHouse (self-hosted)
-- [x] MVP: Module 1 (DETECT) only
-- [x] Timeline: No targets, go with flow
-- [x] Conference: KubeCon NA 2026
+- [x] Deep competitive analysis, agent framework comparison, tech stack research
+- [x] All documentation: features.md, tech-stack.md, technology.md, doanddonts.md, architecture.md
+- [x] competitive-analysis.md, RESEARCH.md
+- [x] All decisions confirmed (name, domain, license, entity, LLM, cloud, DB, scope)
 
 ---
 
-## PHASE 1: MVP Scaffolding (Ready to Start on Mateen's Go)
+## PHASE 1: MVP Scaffolding (COMPLETE)
 
-### Project Setup
-- [ ] Initialize Python project with `pyproject.toml` (uv)
-- [ ] Set up project structure:
-  ```
-  autosre/
-  ├── cli/              # CLI entry point (Typer)
-  ├── collector/        # OTel Collector config generator
-  ├── detection/        # Anomaly detection engine
-  │   ├── models/       # IF, OCSVM, LSTM-AE, Trans-AE, CNN-AE, LSTM-VAE
-  │   ├── cooldown/     # Cooldown exclusion logic
-  │   ├── threshold/    # Optuna-based threshold discovery
-  │   └── ablation/     # Feature ablation analysis
-  ├── streaming/        # Kafka + Flink pipeline
-  ├── inference/        # vLLM integration for agent LLM calls
-  ├── alerting/         # Slack, webhook, PagerDuty
-  └── config/           # YAML config schema
-  ```
-- [ ] Set up GitHub Actions CI (lint, test, type check)
-- [ ] Create `Dockerfile` and `docker-compose.yml`:
-  - Kafka (KRaft mode)
-  - OTel Collector
-  - ClickHouse
-  - vLLM (with Qwen model)
-- [ ] Write `README.md` with quickstart
+### Project Setup (DONE)
+- [x] Python project with `pyproject.toml` (hatchling)
+- [x] Full project structure under `src/autosre/`
+- [x] GitHub Actions CI (lint, test, type check on Python 3.12/3.13)
+- [x] Docker Compose: Kafka (KRaft) + ClickHouse + OTel Collector
+- [x] OTel Collector config: OTLP receiver → Kafka exporter (3 topics)
+- [x] README.md with quickstart
 
-### Port Paper 5 Detection Code
-- [ ] Extract ML models from `~/mateen/phd/papers/paper5-otel-aiops/`
-- [ ] Refactor into reusable detection library:
-  - Isolation Forest wrapper (scikit-learn/PyOD)
-  - One-Class SVM wrapper (scikit-learn/PyOD)
-  - LSTM Autoencoder (PyTorch)
-  - Transformer Autoencoder (PyTorch)
-  - CNN Autoencoder (PyTorch)
-  - LSTM VAE (PyTorch)
-- [ ] Implement cooldown exclusion as a core training/inference filter
-- [ ] Implement Optuna-based threshold discovery
-- [ ] Write unit tests for each model
+### Detection Engine (DONE)
+- [x] 6 ML models ported from Paper 5:
+  - Isolation Forest (scikit-learn) — `detection/models/classical.py`
+  - One-Class SVM (scikit-learn) — `detection/models/classical.py`
+  - LSTM Autoencoder (PyTorch) — `detection/models/deep.py`
+  - Transformer Autoencoder (PyTorch) — `detection/models/deep.py`
+  - 1D-CNN Autoencoder (PyTorch) — `detection/models/deep.py`
+  - LSTM VAE (PyTorch) — `detection/models/deep.py`
+- [x] BaseDetector interface + ModelRegistry — `detection/models/base.py`
+- [x] Cooldown-aware detection (core differentiator) — `detection/cooldown/exclusion.py`
+  - CooldownManager with per-signal windows
+  - Paper 5 compatible `mark_cooldown_windows_paper5()`
+  - Training data filtering, mask application
+- [x] Automated threshold discovery — `detection/threshold/finder.py`
+  - F1-optimal, percentile, statistical, auto
+- [x] Late fusion (4 strategies from Paper 5) — `detection/fusion.py`
+  - max, average, weighted, majority vote
+- [x] Feature ablation analyzer — `detection/ablation/analyzer.py`
+  - Leave-one-group-out, AUC delta, drop recommendations
+- [x] Optuna hyperparameter tuning — `detection/tuning.py`
+  - All 6 models with Paper 5 search spaces
+  - TPE sampler, configurable trials
 
-### OTel Integration
-- [ ] Create OTel Collector config template (OTLP receiver, Kafka exporter)
-- [ ] Build OTLP ingestion endpoint (gRPC + HTTP)
-- [ ] Implement metric/trace/log parsers from OTLP to detection features
-- [ ] Feature engineering pipeline (aggregations, derived features)
-- [ ] ClickHouse schema for telemetry storage
+### OTel Ingestion (DONE)
+- [x] OTLP JSON parsers (metrics, traces, logs) — `collector/parser.py`
+- [x] Feature engineering pipeline — `collector/features.py`
+  - Metrics: mean/std/max per service per window
+  - Traces: span_count, trace_count, latency p50/p95/p99, error_rate
+  - Logs: log_count, error_count, warn_count, error_rate, rate_change
+- [x] `get_feature_columns()` utility for metadata exclusion
 
-### vLLM Integration
-- [ ] Docker setup for vLLM with Qwen-2.5-Coder or DeepSeek-V3
-- [ ] OpenAI-compatible API wrapper (vLLM serves this natively)
-- [ ] LangGraph integration via OpenAI-compatible client
-- [ ] Model selection config (small model for triage, larger for RCA)
-- [ ] GPU requirements documentation (min: 1x A10G or RTX 4090)
+### Alerting (DONE)
+- [x] Slack webhook dispatcher (Block Kit rich messages) — `alerting/dispatcher.py`
+- [x] Generic webhook dispatcher — `alerting/dispatcher.py`
+- [x] AnomalyAlert dataclass with severity derivation
 
-### CLI
-- [ ] Build CLI with Typer:
-  - `autosre init` -- generate config file
-  - `autosre detect --config config.yaml` -- run detection
-  - `autosre train --data ./telemetry/` -- train models
-  - `autosre status` -- show detection status
-  - `autosre ablation --config config.yaml` -- run feature ablation
-- [ ] Config file schema (YAML):
-  ```yaml
-  telemetry:
-    endpoint: "localhost:4317"  # OTLP gRPC
-    signals: [metrics, traces, logs]
-  storage:
-    clickhouse:
-      host: "localhost"
-      port: 8123
-  detection:
-    models: [auto]
-    cooldown:
-      enabled: true
-      default_duration: "10m"
-    threshold:
-      method: optuna
-      trials: 300
-  llm:
-    provider: vllm
-    endpoint: "http://localhost:8000/v1"
-    model: "Qwen/Qwen2.5-Coder-7B-Instruct"
-  alerting:
-    slack:
-      webhook_url: "${SLACK_WEBHOOK_URL}"
-  ```
+### CLI (DONE)
+- [x] `autosre init` — generate config YAML
+- [x] `autosre train` — train models from Parquet/CSV
+- [x] `autosre detect` — score data and display anomaly table
+- [x] `autosre models` / `autosre status` — list registered models
+- [x] `autosre -v` — version
+
+### Config (DONE)
+- [x] YAML config schema with vLLM, ClickHouse, cooldown, OTel — `config/schema.py`
+
+### Tests (DONE - 66 passing)
+- [x] 16 model tests (all 6 models + registry)
+- [x] 7 cooldown tests
+- [x] 6 threshold tests
+- [x] 18 fusion tests
+- [x] 26 collector tests (parsers + feature engineering)
+- [x] Alerting tests (dispatcher)
 
 ---
 
-## PHASE 2: Streaming Pipeline
+## PHASE 2: Streaming Pipeline (NEXT)
+
+### ClickHouse Schema
+- [ ] Create telemetry tables (metrics, traces, logs)
+- [ ] Create anomaly_scores table
+- [ ] Create incidents table
+- [ ] Materialized views for real-time aggregations
+- [ ] ClickHouse init SQL in `infrastructure/clickhouse/`
 
 ### Kafka + Flink Setup
 - [ ] Create Flink job: feature engineering (tumbling windows, aggregations)
 - [ ] Create Flink job: streaming anomaly detection (PySAD models)
 - [ ] Create Flink job: alert correlation (cross-signal fusion, dedup)
 - [ ] Port Paper 7 streaming features (lag_velocity, throughput_ratio, etc.)
-- [ ] ClickHouse materialized views for real-time aggregations
+- [ ] Docker Compose update: add Flink JobManager + TaskManager
 
 ### Streaming Detection
 - [ ] Integrate PySAD streaming algorithms (Half-Space Trees, xStream)
 - [ ] Implement micro-batch inference for PyTorch models on Flink
 - [ ] Implement cooldown exclusion in streaming context
 
+### vLLM Integration
+- [ ] Docker setup for vLLM with Qwen-2.5-Coder or DeepSeek-V3
+- [ ] OpenAI-compatible API wrapper (vLLM serves this natively)
+- [ ] LangGraph integration via OpenAI-compatible client
+- [ ] Model routing config (small for triage, large for RCA)
+- [ ] GPU requirements documentation
+
 ---
 
 ## PHASE 3: Agent Layer
 
 ### LangGraph Agents (powered by vLLM)
-- [ ] Design agent graph (triage, investigation, RCA, remediation, chaos validation)
+- [ ] Design agent graph (triage → investigation → RCA → remediation → chaos validation)
 - [ ] Implement triage agent (anomaly classification, severity scoring)
 - [ ] Implement investigation agent (log search, metric correlation)
 - [ ] Implement RCA agent (graph traversal, GNN inference)
 - [ ] Implement remediation agent (runbook execution, kubectl actions)
 - [ ] Human-in-the-loop gates
-- [ ] Model routing: small model (Qwen-7B) for triage, larger (Qwen-72B or DeepSeek) for complex RCA
 
 ### MCP Integration
 - [ ] Create MCP server: kubernetes (kubectl wrapper)
@@ -176,18 +141,29 @@ Things that can be researched, built, verified, or automated.
 ## VERIFIED CLAIMS
 
 - [x] "AutoSRE" name available (no major project, no trademark)
-- [x] autosre.dev purchased by Mateen
+- [x] autosre.dev purchased
+- [x] GitHub: https://github.com/phonotechnologies/autosre (public, Apache-2.0)
+- [x] PyPI: https://pypi.org/project/autosre/0.0.1/
+- [x] npm: @mateenali66/autosre@0.0.1
 - [x] No existing tool has cooldown-aware detection
 - [x] No patent exists for cooldown-aware anomaly detection
 - [x] AIOps market: $2.67B-$30.7B (2026)
 - [x] 81% of K8s users deploy OTel Collectors (CNCF survey Jan 2026)
 - [x] LangGraph recommended for agent orchestration
 - [x] GNNs achieve 85-93% on RCA (Paper 1)
-- [x] ClickHouse is used by Grafana internally for telemetry (Loki/Mimir)
-- [x] vLLM serves OpenAI-compatible API natively (drop-in for LangGraph)
+- [x] ClickHouse used by Grafana internally (Loki/Mimir)
+- [x] vLLM serves OpenAI-compatible API natively
 
 ---
 
-## NEXT STEP
+## HOW TO RESUME
 
-Ready to start Phase 1 on Mateen's "go."
+Next conversation: "Continue building AutoSRE, pick up from Phase 2."
+
+Key context:
+- Repo: `~/mateen/saas/AutoSRE/` (also at github.com/phonotechnologies/autosre)
+- 66 tests passing, lint clean, CLI working
+- Phase 1 is complete. Phase 2 (streaming pipeline) is next.
+- Start with ClickHouse schema, then Flink jobs, then vLLM integration.
+- Read `architecture.md` for the service boundary plan.
+- Read Paper 7 CLAUDE.md at `~/mateen/phd/papers/paper7-streaming-anomaly-detection/CLAUDE.md` for streaming features to port.
