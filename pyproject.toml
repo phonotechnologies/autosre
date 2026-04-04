@@ -43,6 +43,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+storage = ["clickhouse-connect>=0.7"]
 streaming = ["confluent-kafka>=2.5", "pysad>=0.2"]
 alerting = ["slack-sdk>=3.30", "httpx>=0.27"]
 dev = [

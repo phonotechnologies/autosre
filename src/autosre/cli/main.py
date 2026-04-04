@@ -175,6 +175,38 @@ def detect(
 
 
 @app.command()
+def migrate(
+    config: Path = typer.Option("autosre.yaml", "--config", "-c", help="Config file"),
+):
+    """Run ClickHouse database migrations."""
+    from autosre.config import AutoSREConfig
+
+    cfg = AutoSREConfig.from_yaml(config) if config.exists() else AutoSREConfig()
+
+    console.print(
+        f"[bold]Running migrations against ClickHouse "
+        f"({cfg.storage.clickhouse_host}:{cfg.storage.clickhouse_port}"
+        f"/{cfg.storage.clickhouse_database})...[/bold]"
+    )
+
+    from infrastructure.clickhouse.migrate import run_migrations
+
+    count = run_migrations(
+        host=cfg.storage.clickhouse_host,
+        port=cfg.storage.clickhouse_port,
+        database=cfg.storage.clickhouse_database,
+    )
+
+    if count < 0:
+        console.print("[red]Migration failed. See errors above.[/red]")
+        raise typer.Exit(1)
+    elif count == 0:
+        console.print("[green]All migrations already applied.[/green]")
+    else:
+        console.print(f"[green]Successfully applied {count} migration(s).[/green]")
+
+
+@app.command()
 def status():
     """Show AutoSRE status and available models."""
     from autosre.detection.models import ModelRegistry
