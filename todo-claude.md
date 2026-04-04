@@ -1,7 +1,5 @@
 # AutoSRE: Claude Action Items
 
-Things that can be researched, built, verified, or automated.
-
 ---
 
 ## PHASE 0: Foundation (COMPLETE)
@@ -15,155 +13,120 @@ Things that can be researched, built, verified, or automated.
 
 ## PHASE 1: MVP Scaffolding (COMPLETE)
 
-### Project Setup (DONE)
-- [x] Python project with `pyproject.toml` (hatchling)
-- [x] Full project structure under `src/autosre/`
-- [x] GitHub Actions CI (lint, test, type check on Python 3.12/3.13)
-- [x] Docker Compose: Kafka (KRaft) + ClickHouse + OTel Collector
-- [x] OTel Collector config: OTLP receiver → Kafka exporter (3 topics)
-- [x] README.md with quickstart
-
-### Detection Engine (DONE)
-- [x] 6 ML models ported from Paper 5:
-  - Isolation Forest (scikit-learn) — `detection/models/classical.py`
-  - One-Class SVM (scikit-learn) — `detection/models/classical.py`
-  - LSTM Autoencoder (PyTorch) — `detection/models/deep.py`
-  - Transformer Autoencoder (PyTorch) — `detection/models/deep.py`
-  - 1D-CNN Autoencoder (PyTorch) — `detection/models/deep.py`
-  - LSTM VAE (PyTorch) — `detection/models/deep.py`
-- [x] BaseDetector interface + ModelRegistry — `detection/models/base.py`
-- [x] Cooldown-aware detection (core differentiator) — `detection/cooldown/exclusion.py`
-  - CooldownManager with per-signal windows
-  - Paper 5 compatible `mark_cooldown_windows_paper5()`
-  - Training data filtering, mask application
-- [x] Automated threshold discovery — `detection/threshold/finder.py`
-  - F1-optimal, percentile, statistical, auto
-- [x] Late fusion (4 strategies from Paper 5) — `detection/fusion.py`
-  - max, average, weighted, majority vote
-- [x] Feature ablation analyzer — `detection/ablation/analyzer.py`
-  - Leave-one-group-out, AUC delta, drop recommendations
-- [x] Optuna hyperparameter tuning — `detection/tuning.py`
-  - All 6 models with Paper 5 search spaces
-  - TPE sampler, configurable trials
-
-### OTel Ingestion (DONE)
-- [x] OTLP JSON parsers (metrics, traces, logs) — `collector/parser.py`
-- [x] Feature engineering pipeline — `collector/features.py`
-  - Metrics: mean/std/max per service per window
-  - Traces: span_count, trace_count, latency p50/p95/p99, error_rate
-  - Logs: log_count, error_count, warn_count, error_rate, rate_change
-- [x] `get_feature_columns()` utility for metadata exclusion
-
-### Alerting (DONE)
-- [x] Slack webhook dispatcher (Block Kit rich messages) — `alerting/dispatcher.py`
-- [x] Generic webhook dispatcher — `alerting/dispatcher.py`
-- [x] AnomalyAlert dataclass with severity derivation
-
-### CLI (DONE)
-- [x] `autosre init` — generate config YAML
-- [x] `autosre train` — train models from Parquet/CSV
-- [x] `autosre detect` — score data and display anomaly table
-- [x] `autosre models` / `autosre status` — list registered models
-- [x] `autosre -v` — version
-
-### Config (DONE)
-- [x] YAML config schema with vLLM, ClickHouse, cooldown, OTel — `config/schema.py`
-
-### Tests (DONE - 66 passing)
-- [x] 16 model tests (all 6 models + registry)
-- [x] 7 cooldown tests
-- [x] 6 threshold tests
-- [x] 18 fusion tests
-- [x] 26 collector tests (parsers + feature engineering)
-- [x] Alerting tests (dispatcher)
+- [x] Project setup: pyproject.toml, structure, GitHub Actions CI, Docker Compose, README
+- [x] 6 ML models ported from Paper 5 (IF, OCSVM, LSTM-AE, Trans-AE, CNN-AE, LSTM-VAE)
+- [x] Cooldown-aware detection, threshold discovery, late fusion (4 strategies)
+- [x] Feature ablation analyzer, Optuna HP tuning (all 6 models)
+- [x] OTel OTLP parsers + feature engineering pipeline
+- [x] Alerting (Slack + webhook), config (YAML)
+- [x] CLI: init, train, detect, models, status
 
 ---
 
-## PHASE 2: Streaming Pipeline (NEXT)
+## PHASE 1.5: Storage + Inference (COMPLETE)
 
-### ClickHouse Schema
-- [ ] Create telemetry tables (metrics, traces, logs)
-- [ ] Create anomaly_scores table
-- [ ] Create incidents table
-- [ ] Materialized views for real-time aggregations
-- [ ] ClickHouse init SQL in `infrastructure/clickhouse/`
+### ClickHouse Schema (DONE)
+- [x] 8 tables: spans, metrics, logs, features, anomaly_scores, incidents, cooldown_windows, model_registry
+- [x] 3 materialized views: trace/metric/log features auto-computed on INSERT
+- [x] Production codecs: DoubleDelta+ZSTD, Gorilla+ZSTD, T64+ZSTD, ZSTD(3)
+- [x] LowCardinality, Map columns, MATERIALIZED columns, bloom_filter, tokenbf_v1
+- [x] TTL policies: 14d raw, 30d logs, 90d features/scores, 365d incidents
+- [x] Migration runner (sequential, version-tracked)
+- [x] ClickHouseClient with full CRUD for all tables
+- [x] `autosre migrate` CLI command
 
-### Kafka + Flink Setup
-- [ ] Create Flink job: feature engineering (tumbling windows, aggregations)
-- [ ] Create Flink job: streaming anomaly detection (PySAD models)
-- [ ] Create Flink job: alert correlation (cross-signal fusion, dedup)
-- [ ] Port Paper 7 streaming features (lag_velocity, throughput_ratio, etc.)
-- [ ] Docker Compose update: add Flink JobManager + TaskManager
+### LLM Inference (DONE)
+- [x] OpenAI-compatible client (works with ollama and vLLM)
+- [x] Built-in prompts: analyze_anomaly, summarize_incident, suggest_runbook
+- [x] LLMConfig with ollama_default() and vllm_default()
+- [x] `autosre llm` CLI command (check connection, list models)
 
-### Streaming Detection
-- [ ] Integrate PySAD streaming algorithms (Half-Space Trees, xStream)
-- [ ] Implement micro-batch inference for PyTorch models on Flink
-- [ ] Implement cooldown exclusion in streaming context
+### FastAPI Server (DONE)
+- [x] /health, /detect, /analyze, /incidents, /models endpoints
+- [x] `autosre serve` CLI command
+- [x] Lifespan-managed LLM + ClickHouse clients
 
-### vLLM Integration
-- [ ] Docker setup for vLLM with Qwen-2.5-Coder or DeepSeek-V3
-- [ ] OpenAI-compatible API wrapper (vLLM serves this natively)
-- [ ] LangGraph integration via OpenAI-compatible client
+### Docker Compose (DONE)
+- [x] Kafka (KRaft) + ClickHouse + OTel Collector + ollama (opt-in)
+
+---
+
+## PHASE 2: Streaming Pipeline (BLOCKED on Paper 7)
+
+### Blocker
+Paper 7 (Streaming Anomaly Detection on Kafka/Flink) is in planning phase.
+The 8 streaming-specific derived features (lag_velocity, throughput_ratio, etc.)
+are designed but not experimentally validated. Flink jobs depend on these features.
+
+### What can be done WITHOUT Paper 7
+- [ ] ClickHouse Kafka engine for raw telemetry ingestion (no Flink needed)
+- [ ] Basic Flink job: 1-min window aggregation for microservice features (no streaming-specific features)
+- [ ] End-to-end integration test: docker compose up → send OTLP → see features in ClickHouse
+
+### What REQUIRES Paper 7 completion
+- [ ] Flink streaming detection job with PySAD models
+- [ ] Paper 7 streaming features (lag_velocity, lag_acceleration, throughput_ratio, checkpoint_overhead_ratio, isr_stability, rebalance_frequency, backpressure_ratio, watermark_lag)
+- [ ] 30-second window aggregation for streaming workloads
+- [ ] Streaming-specific fault detection (broker crash, consumer lag, checkpoint failure, etc.)
+
+### vLLM Integration (can do independently)
+- [ ] Docker setup for vLLM with Qwen-2.5-Coder on GPU (production)
 - [ ] Model routing config (small for triage, large for RCA)
 - [ ] GPU requirements documentation
 
 ---
 
-## PHASE 3: Agent Layer
+## PHASE 3: Agent Layer (Future)
 
-### LangGraph Agents (powered by vLLM)
-- [ ] Design agent graph (triage → investigation → RCA → remediation → chaos validation)
-- [ ] Implement triage agent (anomaly classification, severity scoring)
-- [ ] Implement investigation agent (log search, metric correlation)
-- [ ] Implement RCA agent (graph traversal, GNN inference)
-- [ ] Implement remediation agent (runbook execution, kubectl actions)
+- [ ] LangGraph agent graph (triage → investigation → RCA → remediation → chaos validation)
+- [ ] MCP servers: kubernetes, prometheus, clickhouse, slack
 - [ ] Human-in-the-loop gates
 
-### MCP Integration
-- [ ] Create MCP server: kubernetes (kubectl wrapper)
-- [ ] Create MCP server: prometheus (PromQL queries)
-- [ ] Create MCP server: clickhouse (telemetry queries)
-- [ ] Create MCP server: slack (messaging, approvals)
+---
+
+## PHASE 4: Frontend Dashboard (Future)
+
+- [ ] Next.js dashboard: topology, anomaly feed, incidents, ablation report
 
 ---
 
-## PHASE 4: Frontend Dashboard
+## PROJECT STATS (as of Apr 3, 2026)
 
-### Next.js Dashboard
-- [ ] Service topology view
-- [ ] Real-time anomaly feed (WebSocket)
-- [ ] Incident timeline
-- [ ] Model performance metrics
-- [ ] Feature ablation report
-
----
+| Metric | Value |
+|--------|-------|
+| Commits | 6 |
+| Lines of code | ~15,000 |
+| Tests | 127 passing |
+| CLI commands | 7 (init, train, detect, models, migrate, llm, serve) |
+| API endpoints | 5 (/health, /detect, /analyze, /incidents, /models) |
+| ML models | 6 |
+| ClickHouse tables | 8 + 3 MVs |
+| Lint | Clean (ruff) |
 
 ## VERIFIED CLAIMS
 
-- [x] "AutoSRE" name available (no major project, no trademark)
 - [x] autosre.dev purchased
-- [x] GitHub: https://github.com/phonotechnologies/autosre (public, Apache-2.0)
+- [x] GitHub: https://github.com/phonotechnologies/autosre
 - [x] PyPI: https://pypi.org/project/autosre/0.0.1/
 - [x] npm: @mateenali66/autosre@0.0.1
 - [x] No existing tool has cooldown-aware detection
 - [x] No patent exists for cooldown-aware anomaly detection
-- [x] AIOps market: $2.67B-$30.7B (2026)
-- [x] 81% of K8s users deploy OTel Collectors (CNCF survey Jan 2026)
 - [x] LangGraph recommended for agent orchestration
-- [x] GNNs achieve 85-93% on RCA (Paper 1)
 - [x] ClickHouse used by Grafana internally (Loki/Mimir)
 - [x] vLLM serves OpenAI-compatible API natively
+- [x] ollama serves OpenAI-compatible API natively (confirmed working)
 
 ---
 
 ## HOW TO RESUME
 
-Next conversation: "Continue building AutoSRE, pick up from Phase 2."
+**Next conversation**: "Continue building AutoSRE"
 
-Key context:
-- Repo: `~/mateen/saas/AutoSRE/` (also at github.com/phonotechnologies/autosre)
-- 66 tests passing, lint clean, CLI working
-- Phase 1 is complete. Phase 2 (streaming pipeline) is next.
-- Start with ClickHouse schema, then Flink jobs, then vLLM integration.
-- Read `architecture.md` for the service boundary plan.
-- Read Paper 7 CLAUDE.md at `~/mateen/phd/papers/paper7-streaming-anomaly-detection/CLAUDE.md` for streaming features to port.
+**Key context**:
+- Repo: `~/mateen/saas/AutoSRE/` (also github.com/phonotechnologies/autosre)
+- 127 tests passing, lint clean, 7 CLI commands working
+- Phase 1 + 1.5 complete. Phase 2 partially blocked on Paper 7.
+- Can proceed with: non-streaming Flink jobs, integration tests, vLLM production setup
+- Read `architecture.md` for service boundary plan
+- Read `todo-mateen.md` for human action items
+- Paper 7 status: `~/mateen/phd/papers/paper7-streaming-anomaly-detection/CLAUDE.md`

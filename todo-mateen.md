@@ -1,105 +1,107 @@
 # AutoSRE: Mateen's Action Items
 
-Things that require human judgment, account access, financial decisions, or external communication.
-
 ---
 
 ## DECISIONS MADE
 
-- [x] **Product name**: AutoSRE
-- [x] **Domain**: autosre.dev (purchased)
-- [x] **Business model**: Grafana model (Apache-2.0 OSS core + managed service)
-- [x] **Pricing**: Free for now
-- [x] **Entity**: Phono Technologies Inc.
-- [x] **LLM strategy**: vLLM self-hosted with Qwen/DeepSeek (no API dependency)
-- [x] **Cloud provider**: AWS
-- [x] **Database**: ClickHouse (telemetry), self-hosted
-- [x] **MVP scope**: Module 1 (DETECT) confirmed
-- [x] **Timeline**: No targets, go with flow
-- [x] **Conference**: Target KubeCon NA 2026
-- [x] **Architecture**: Modular monolith → SOA (not microservices)
+- [x] Product name: AutoSRE
+- [x] Domain: autosre.dev (purchased)
+- [x] Business model: Grafana model (Apache-2.0 OSS core + managed service)
+- [x] Pricing: Free for now
+- [x] Entity: Phono Technologies Inc.
+- [x] LLM strategy: ollama (local dev) + vLLM (production on AWS)
+- [x] Cloud provider: AWS
+- [x] Database: ClickHouse (telemetry), self-hosted
+- [x] MVP scope: Module 1 (DETECT) confirmed
+- [x] Timeline: No targets, go with flow
+- [x] Conference: Target KubeCon NA 2026
+- [x] Architecture: Modular monolith → SOA
 
 ---
 
 ## NAMESPACE (ALL DONE)
 
-- [x] **GitHub**: https://github.com/phonotechnologies/autosre (public, Apache-2.0)
-- [x] **PyPI**: https://pypi.org/project/autosre/0.0.1/
-- [x] **npm**: @mateenali66/autosre@0.0.1
-- [ ] **Also register**: `autosre.io` and `autosre.ai` as redirects ($12-15/yr each)
+- [x] GitHub: https://github.com/phonotechnologies/autosre
+- [x] PyPI: https://pypi.org/project/autosre/0.0.1/
+- [x] npm: @mateenali66/autosre@0.0.1
+- [ ] Register `autosre.io` and `autosre.ai` as redirects ($12-15/yr each)
 
 ---
 
-## BUILD STATUS (as of Apr 3, 2026)
+## BUILD STATUS (Apr 3, 2026)
 
-**Phase 1 is COMPLETE. 66 tests passing, lint clean, CLI working.**
+**Phase 1 + 1.5 COMPLETE. 127 tests, 7 CLI commands, 5 API endpoints.**
+**Phase 2 partially BLOCKED on Paper 7 completion.**
 
-| What | Status | Files |
-|------|--------|-------|
+| Module | Status | Key Files |
+|--------|--------|-----------|
 | 6 ML models (Paper 5) | Done | `detection/models/` |
 | Cooldown exclusion | Done | `detection/cooldown/` |
 | Threshold discovery | Done | `detection/threshold/` |
 | Late fusion (4 strategies) | Done | `detection/fusion.py` |
 | Feature ablation | Done | `detection/ablation/` |
-| Optuna tuning (6 models) | Done | `detection/tuning.py` |
+| Optuna tuning | Done | `detection/tuning.py` |
 | OTel OTLP parsers | Done | `collector/parser.py` |
 | Feature engineering | Done | `collector/features.py` |
 | Alerting (Slack + webhook) | Done | `alerting/dispatcher.py` |
-| CLI (init/train/detect/models) | Done | `cli/main.py` |
-| Config (YAML) | Done | `config/schema.py` |
+| CLI (7 commands) | Done | `cli/main.py` |
+| FastAPI server (5 endpoints) | Done | `api/app.py` |
+| ClickHouse schema (8 tables) | Done | `infrastructure/clickhouse/` |
+| ClickHouseClient | Done | `storage/clickhouse.py` |
+| Migration runner | Done | `infrastructure/clickhouse/migrate.py` |
+| LLM client (ollama/vLLM) | Done | `inference/client.py` |
 | Docker Compose | Done | `docker-compose.yml` |
 | GitHub Actions CI | Done | `.github/workflows/ci.yml` |
-| Architecture docs | Done | `architecture.md` |
+| Streaming pipeline (Flink) | **BLOCKED** | Needs Paper 7 |
 
-**Next: Phase 2 (streaming pipeline, ClickHouse, vLLM)**
+---
+
+## BLOCKER: Paper 7
+
+Paper 7 (Streaming Anomaly Detection on Kafka/Flink) is in planning phase.
+The Flink streaming jobs and 8 derived features depend on Paper 7's experimental design.
+
+**What's blocked**: Flink streaming detection, 30-sec windows, streaming-specific fault taxonomy
+**What's NOT blocked**: Everything else (detection engine, CLI, API, ClickHouse, LLM)
+
+**Resolution**: Complete Paper 7 experimental design, then resume AutoSRE Phase 2.
 
 ---
 
 ## THINGS TO CHECK / VALIDATE
 
 ### IP and Licensing
-- [ ] **Paper 5 code licensing** -- ML models from Paper 5 are now in AutoSRE. Confirm:
-  - Code was written independently (not under employment contract)
-  - Safe to release under Apache-2.0
-  - Do you need to re-license or rewrite?
-- [ ] **Paper 7 dataset** -- Publish on Zenodo with CC-BY-4.0. Confirm no proprietary data.
-- [ ] **Patent alignment** -- Does the cooldown exclusion provisional patent (Aug-Sep 2026) cover the method as implemented in AutoSRE?
+- [ ] Paper 5 code licensing: confirm code was written independently, safe for Apache-2.0
+- [ ] Paper 7 dataset: publish on Zenodo with CC-BY-4.0
+- [ ] Patent alignment: cooldown exclusion provisional patent (Aug-Sep 2026) covers AutoSRE method?
 
 ### Competitive Monitoring
-- [ ] **Monitor OpenSRE (Tracer-Cloud)** -- github.com/Tracer-Cloud/opensre (336 stars)
-- [ ] **Azure SRE Agent** -- GA March 2026
-- [ ] **AWS DevOps Agent** -- Launched April 2026
+- [ ] OpenSRE (Tracer-Cloud): github.com/Tracer-Cloud/opensre (336 stars)
+- [ ] Azure SRE Agent: GA March 2026
+- [ ] AWS DevOps Agent: Launched April 2026
 
-**How AutoSRE is different from all three:**
+**AutoSRE differentiators**:
 
-| Dimension | OpenSRE | Azure SRE Agent | AWS DevOps Agent | **AutoSRE** |
-|-----------|---------|-----------------|------------------|-------------|
-| **Source** | OSS (small) | Proprietary | Proprietary | OSS (Apache-2.0) |
-| **Cloud lock-in** | None | Azure only | AWS only | **None (multi-cloud)** |
-| **Detection method** | Generic LLM | Proprietary ML | Proprietary ML | **6 peer-reviewed ML models** |
-| **Cooldown exclusion** | No | No | No | **Yes (unique)** |
-| **OTel-native** | Partial | No (Azure Monitor) | No (CloudWatch) | **Yes (OTLP only)** |
-| **Self-hosted LLM** | No | No | No | **Yes (vLLM + Qwen/DeepSeek)** |
-| **Research-backed** | No | Internal only | Internal only | **7 published papers** |
-| **Streaming detection** | No | No | No | **Yes (Kafka + Flink)** |
-| **Feature ablation** | No | No | No | **Yes (proven AUC=0.964)** |
-| **Cost** | Free | Bundled with Azure | Bundled with AWS | **Free (OSS)** |
+| Dimension | Competitors | **AutoSRE** |
+|-----------|------------|-------------|
+| Source | Proprietary or small OSS | **Apache-2.0, full-featured** |
+| Cloud lock-in | Azure/AWS only | **Multi-cloud** |
+| Detection | Generic LLM or proprietary ML | **6 peer-reviewed ML models** |
+| Cooldown exclusion | None | **Unique (patentable)** |
+| OTel-native | Partial or none | **OTLP-only ingestion** |
+| Self-hosted LLM | None | **ollama/vLLM** |
+| Research-backed | No | **7 published papers** |
 
 ### Community & Positioning
-- [ ] **KubeCon NA 2026 CFP** -- Submit talk. Check CFP deadlines.
-- [ ] **CNCF Sandbox** -- Target 12 months after first public release
-- [ ] **Blog post launch series**:
-  1. "Why existing AIOps tools fail at anomaly detection"
-  2. "How cooldown exclusion eliminates false alerts"
-  3. "Show HN: AutoSRE"
-
-### Personal Alignment
-- [ ] **EB2-NIW** -- Confirm with attorney that OSS SRE tool counts as "substantial merit"
-- [ ] **Time allocation** -- No pressure, go with flow
+- [ ] KubeCon NA 2026 CFP: check deadlines
+- [ ] CNCF Sandbox: target 12 months after first public release
+- [ ] Blog launch series (3 posts)
 
 ---
 
-## ONGOING
+## NEXT ACTIONS (when resuming)
 
-- [ ] Review code and provide feedback on any adjustments
-- [ ] Say "continue" in next conversation to pick up Phase 2
+1. Complete Paper 7 experimental design → unblocks Flink streaming jobs
+2. Run `docker compose up` integration test (Kafka + ClickHouse + OTel)
+3. Test `autosre llm` with local ollama (`ollama serve && ollama pull qwen2.5-coder:7b`)
+4. Review and provide feedback on architecture decisions
