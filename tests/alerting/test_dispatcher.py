@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -18,7 +18,7 @@ def sample_alert() -> AnomalyAlert:
         model="isolation_forest",
         score=0.87,
         threshold=0.65,
-        timestamp=datetime(2026, 4, 3, 12, 0, 0, tzinfo=timezone.utc),
+        timestamp=datetime(2026, 4, 3, 12, 0, 0, tzinfo=UTC),
         service="payment-api",
         details={"feature": "cpu_mean", "window": "5m"},
     )
@@ -31,7 +31,7 @@ def critical_alert() -> AnomalyAlert:
         model="transformer_ae",
         score=0.98,
         threshold=0.40,
-        timestamp=datetime(2026, 4, 3, 12, 0, 0, tzinfo=timezone.utc),
+        timestamp=datetime(2026, 4, 3, 12, 0, 0, tzinfo=UTC),
     )
 
 
@@ -60,7 +60,7 @@ class TestAnomalyAlert:
             model="ocsvm",
             score=0.75,
             threshold=0.50,
-            timestamp=datetime(2026, 1, 1, tzinfo=timezone.utc),
+            timestamp=datetime(2026, 1, 1, tzinfo=UTC),
         )
         # 0.75 / 0.50 = 1.5 -> "warning"
         assert alert.severity == "warning"
@@ -71,7 +71,7 @@ class TestAnomalyAlert:
             model="if",
             score=0.5,
             threshold=0.5,
-            timestamp=datetime.now(tz=timezone.utc),
+            timestamp=datetime.now(tz=UTC),
         )
         assert alert.to_dict()["details"] == {}
 
@@ -81,7 +81,7 @@ class TestAnomalyAlert:
             model="if",
             score=0.5,
             threshold=0.5,
-            timestamp=datetime.now(tz=timezone.utc),
+            timestamp=datetime.now(tz=UTC),
         )
         assert alert.to_dict()["service"] is None
 
