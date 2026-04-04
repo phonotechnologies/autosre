@@ -114,7 +114,7 @@ class AlertDispatcher:
         ]
 
         if alert.service:
-            blocks[1]["fields"].append({"type": "mrkdwn", "text": f"*Service:*\n{alert.service}"})
+            blocks[1]["fields"].append({"type": "mrkdwn", "text": f"*Service:*\n{alert.service}"})  # type: ignore[index]
 
         payload = {
             "text": header,

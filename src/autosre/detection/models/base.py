@@ -69,7 +69,7 @@ class ModelRegistry:
         instances = {}
         for name, model_cls in cls._models.items():
             try:
-                instances[name] = model_cls(n_features=n_features, **kwargs)
+                instances[name] = model_cls(n_features=n_features, **kwargs)  # type: ignore[call-arg]
             except TypeError:
                 instances[name] = model_cls(**kwargs)
         return instances

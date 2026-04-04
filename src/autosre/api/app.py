@@ -193,7 +193,7 @@ def create_app(config: AutoSREConfig | None = None) -> FastAPI:
         total_anomalies = 0
         for name in model_names[:1]:  # Use first model for now
             detector_cls = ModelRegistry.get(name)
-            detector = detector_cls(n_features=len(feature_cols))
+            detector = detector_cls(n_features=len(feature_cols))  # type: ignore[call-arg]
             detector.fit(X)
             scores = detector.score(X)
             total_anomalies = int((scores >= req.threshold).sum())

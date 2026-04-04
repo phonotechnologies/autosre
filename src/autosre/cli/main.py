@@ -101,7 +101,7 @@ def train(
     for model_name in models_to_train:
         console.print(f"\n[bold cyan]Training {model_name}...[/bold cyan]")
         model_cls = ModelRegistry.get(model_name)
-        detector = model_cls(n_features=len(feature_cols))
+        detector = model_cls(n_features=len(feature_cols))  # type: ignore[call-arg]
         detector.fit(X)
         model_path = output / f"{model_name}_{signal}.joblib"
         detector.save(model_path)
