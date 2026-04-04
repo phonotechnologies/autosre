@@ -230,5 +230,62 @@ def models():
     status()
 
 
+@app.command()
+def llm(
+    config: Path = typer.Option("autosre.yaml", "--config", "-c", help="Config file"),
+):
+    """Check LLM connection and list available models."""
+    from autosre.config import AutoSREConfig
+    from autosre.inference import LLMClient
+
+    cfg = AutoSREConfig.from_yaml(config) if config.exists() else AutoSREConfig()
+
+    console.print(f"[bold]Provider:[/bold] {cfg.llm.provider}")
+    console.print(f"[bold]Endpoint:[/bold] {cfg.llm.endpoint}")
+    console.print(f"[bold]Model:[/bold]    {cfg.llm.model}")
+
+    client = LLMClient.from_config(cfg.llm)
+    if client.ping():
+        console.print("[green]Connected.[/green]")
+        available = client.list_models()
+        if available:
+            table = Table(title="Available Models")
+            table.add_column("Model ID", style="cyan")
+            for m in available:
+                table.add_row(m)
+            console.print(table)
+    else:
+        console.print(f"[red]Cannot connect to {cfg.llm.endpoint}[/red]")
+        if cfg.llm.provider == "ollama":
+            console.print("[dim]Start ollama: ollama serve && ollama pull qwen2.5-coder:7b[/dim]")
+        else:
+            console.print("[dim]Start vLLM or update endpoint in config.[/dim]")
+    client.close()
+
+
+@app.command()
+def serve(
+    config: Path = typer.Option("autosre.yaml", "--config", "-c", help="Config file"),
+    host: str = typer.Option("0.0.0.0", "--host", help="Bind host"),
+    port: int = typer.Option(8080, "--port", "-p", help="Bind port"),
+):
+    """Start the AutoSRE API server (FastAPI)."""
+    from autosre.config import AutoSREConfig
+
+    cfg = AutoSREConfig.from_yaml(config) if config.exists() else AutoSREConfig()
+
+    try:
+        import uvicorn
+    except ImportError:
+        console.print("[red]uvicorn not installed. Run: pip install autosre[serve][/red]")
+        raise typer.Exit(1)
+
+    from autosre.api.app import create_app
+
+    app_instance = create_app(cfg)
+    console.print(f"[bold green]AutoSRE API starting on {host}:{port}[/bold green]")
+    uvicorn.run(app_instance, host=host, port=port)
+
+
 if __name__ == "__main__":
     app()

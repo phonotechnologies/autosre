@@ -55,6 +55,23 @@ services:
         condition: service_healthy
     command: ["--config", "/etc/otelcol-contrib/config.yaml"]
 
+  # --- Ollama (local LLM inference for dev) ---
+  # To use: docker compose --profile llm up -d
+  # Then: ollama pull qwen2.5-coder:7b
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["llm"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    healthcheck:
+      test: curl -f http://localhost:11434/api/tags || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   kafka-data:
   clickhouse-data:
+  ollama-data:

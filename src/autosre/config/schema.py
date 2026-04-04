@@ -41,9 +41,27 @@ class DetectionConfig:
 
 @dataclass
 class LLMConfig:
-    provider: str = "vllm"
-    endpoint: str = "http://localhost:8000/v1"
-    model: str = "Qwen/Qwen2.5-Coder-7B-Instruct"
+    provider: str = "ollama"
+    endpoint: str = "http://localhost:11434/v1"
+    model: str = "qwen2.5-coder:7b"
+
+    @staticmethod
+    def ollama_default() -> LLMConfig:
+        """Local dev defaults (ollama)."""
+        return LLMConfig(
+            provider="ollama",
+            endpoint="http://localhost:11434/v1",
+            model="qwen2.5-coder:7b",
+        )
+
+    @staticmethod
+    def vllm_default() -> LLMConfig:
+        """Production defaults (vLLM on GPU)."""
+        return LLMConfig(
+            provider="vllm",
+            endpoint="http://localhost:8000/v1",
+            model="Qwen/Qwen2.5-Coder-7B-Instruct",
+        )
 
 
 @dataclass
